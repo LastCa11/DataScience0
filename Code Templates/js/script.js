@@ -1,55 +1,53 @@
-// Load data using D3
-d3.csv("data/fastfood_calories.csv").then(function(data) {
-  // Data processing and manipulation as needed
 
-  // Page navigation
-  let currentPage = 0; // Initial page
-
-  // Visualization using D3
-  const svg = d3.select("#visualization-container")
-    .append("svg")
-    .attr("width", /* specify width */)
-    .attr("height", /* specify height */);
-
-  // Text for different pages
-  const pages = [
-    "Welcome to the Fast Food Nutrients Analysis",
-    "Upon examining the data, it becomes apparent that certain fast-food items stand out for their relatively healthier macronutrient profiles...",
-    "Expanding the analysis to assess the overall healthiness of entire fast-food chains involves aggregating and comparing nutritional values across all their offerings...",
-    "Furthermore, the dataset may allow for the examination of regional or categorical variations in nutritional content...",
-    "In the interactive webpage, users can explore these findings by navigating through different visualizations. Clicking on specific data points or categories might reveal more detailed information...",
-    "It's essential to note that the actual findings and analyses would depend on the specific details of the `fastfood_calories.csv` dataset, and the code would need to be tailored to the characteristics of the data."
-  ];
-
-  // Update the page content
-  function updatePage() {
-    svg.selectAll("*").remove(); // Clear existing content
-
-    // Display text for the current page
-    svg.append("text")
-      .attr("x", 50)
-      .attr("y", 50)
-      .text(pages[currentPage]);
-
-    // Implement specific visualizations or data representations for each page if needed
-  }
-
-  // Initial page load
-  updatePage();
-
-  // Click event for navigation
-  svg.on("click", function(event) {
-    const clickX = event.clientX;
-    const screenWidth = window.innerWidth;
-
-    if (clickX > screenWidth / 2 && currentPage < pages.length - 1) {
-      // Move to the next page
-      currentPage += 1;
-      updatePage();
-    } else if (clickX <= screenWidth / 2 && currentPage > 0) {
-      // Move to the previous page
-      currentPage -= 1;
-      updatePage();
-    }
+d3.csv("/fastfood_calories.csv").then(function(data) {
+  // Convert calorie values to numbers
+  data.forEach(d => {
+      d.calories = +d.calories;
   });
+
+  // Group data by item and calculate average calories
+  const nestedData = d3.nest()
+      .key(d => d.item)
+      .rollup(values => d3.mean(values, d => d.calories))
+      .entries(data);
+
+  // Extract averages from the nested structure
+  const averages = nestedData.map(d => ({ item: d.key, averageCalories: d.value }));
+
+  // Create SVG container dimensions
+  const width = 800;
+  const height = 400;
+
+  // Create a linear scale for the y-axis
+  const yScale = d3.scaleLinear()
+      .domain([0, d3.max(averages, d => d.averageCalories)])
+      .range([height, 0]);
+
+  // Create the SVG container
+  const svg = d3.select("#chart")
+      .append("svg")
+      .attr("width", width)
+      .attr("height", height);
+
+  // Create bars in the bar chart
+  svg.selectAll("rect")
+      .data(averages)
+      .enter()
+      .append("rect")
+      .attr("x", (d, i) => i * (width / averages.length))
+      .attr("y", d => yScale(d.averageCalories))
+      .attr("width", width / averages.length - 5)
+      .attr("height", d => height - yScale(d.averageCalories))
+      .attr("fill", "steelblue");
+
+  // Add labels to the bars
+  svg.selectAll("text")
+      .data(averages)
+      .enter()
+      .append("text")
+      .text(d => Math.round(d.averageCalories)) // Display rounded average calories
+      .attr("x", (d, i) => i * (width / averages.length) + (width / averages.length) / 2)
+      .attr("y", d => yScale(d.averageCalories) - 10) // Adjust position for better visibility
+      .attr("text-anchor", "middle")
+      .attr("fill", "white");
 });
