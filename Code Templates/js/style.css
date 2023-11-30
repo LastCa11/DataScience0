@@ -1,0 +1,12 @@
+﻿body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Arial', sans-serif;
+}
+
+#visualization-container {
+  /* Add any styles for the visualization container */
+  cursor: pointer;
+}
+
+/* Add more styles as needed */
